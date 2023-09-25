@@ -8,23 +8,25 @@ import shutil
 import pandas as pd
 import openpyxl
 import subprocess
+import glob
 from PIL import Image
 # from openpyxl.drawing.image import Image
 from openpyxl.styles  import Font
-from PyQt5 import QtGui
-from PyQt5.QtGui import QIcon, QPaintDevice
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import Qt, QAbstractTableModel
-from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QApplication, QSizePolicy
+from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtGui import QIcon, QPaintDevice, QPixmap
+from PyQt5.QtCore import Qt, QTimer, QAbstractTableModel
+from PyQt5.QtWidgets import QMainWindow, QLineEdit, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QSizePolicy, QGraphicsPixmapItem
 
 from Ui_image_excel import Ui_MainWindow
-
 
 class Application(QMainWindow):
     def __init__(self, parent=None):
         super(Application, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.view = self.ui.graphicsView
+        self.scene = QGraphicsScene()
+        self.ui.graphicsView.setScene(self.scene)
         ini_cur_path = os.path.dirname(__file__)
         self.config_ini = configparser.ConfigParser()
         self.config_ini_path = f'{ini_cur_path}/config.ini'
@@ -37,11 +39,18 @@ class Application(QMainWindow):
         self.ui.lineEdit_2.setText(self.name_image_columns[2])
         self.ui.lineEdit_3.setText(self.name_image_columns[3])
         self.ui.lineEdit_4.setText(self.name_image_columns[4])
+        self.ui.lineEdit_7.setText("3")
         self.ui.pushButton.clicked.connect(lambda: self.excel_select())
         self.ui.pushButton_2.clicked.connect(lambda: self.insert_image())
         self.ui.pushButton_3.clicked.connect(lambda: self.openFiles())
         self.ui.pushButton_4.clicked.connect(lambda: self.excel_read())
         self.ui.pushButton_5.clicked.connect(lambda: self.file_rename())
+        self.ui.pushButton_6.clicked.connect(lambda: self.excel_open())
+        self.ui.tableView_2.clicked.connect(lambda: self.select_file_node(self.ui.tableView_2.currentIndex()))
+        self.ui.tableView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.tableView.customContextMenuRequested.connect(self.contextMenu)
+        QTimer.singleShot(1, self.imageView)
+
 
     def config_read(self):
         if os.path.exists(self.config_ini_path):
@@ -57,6 +66,17 @@ class Application(QMainWindow):
         else:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.config_ini_path)
 
+    def excel_open(self):
+        open_path = self.ui.lineEdit.text()
+        active_sheet = self.ui.comboBox.currentText()
+        """
+        workbook = openpyxl.load_workbook(open_path)
+        workbook.active = workbook[active_sheet]
+        workbook.save(open_path)
+        workbook.close()
+        """
+        subprocess.Popen(['open',"-a", "Microsoft Excel", open_path])
+
     def excel_select(self):
         fname = QFileDialog.getOpenFileName(self, 'Open file', os.path.expanduser('~') + '/Desktop')
         filepath = fname[0]
@@ -64,10 +84,19 @@ class Application(QMainWindow):
             return "break"
         self.ui.lineEdit.setText(filepath)
         self.wb = openpyxl.load_workbook(filepath)
+        active_sheet_name = self.wb.active.title
         sheets = self.wb.sheetnames
         self.ui.comboBox.addItems(sheets)
+        self.ui.comboBox.setCurrentText(active_sheet_name)
+        self.wb.close()
 
     def excel_read(self):
+        sk = int(self.ui.lineEdit_7.text())
+        """
+        sk_list = []
+        for i in range(3, sk):
+            sk_list.append(i)
+        """
         name = self.ui.lineEdit.text()
         sh = self.ui.comboBox.currentText()
         type_col = self.abc.index(self.name_image_columns[0])
@@ -76,18 +105,44 @@ class Application(QMainWindow):
         img_col = self.abc.index(self.name_image_columns[3])
         use_cols = [type_col, folder_col, file_col, img_col]
 
-        df = pd.read_excel(name, sheet_name=sh, dtype=str, header=2, usecols=use_cols)
-        headders = ['種別','フォルダ名','ファイル名','画像ファイル名']
+        ws = self.wb[sh]
+        maxRow = ws.max_row + 1
+        for i in reversed(range(1, maxRow)):
+            if ws.cell(row=i, column=img_col + 1).value != None:
+                last = i
+                break
+        ft = self.ui.lineEdit_8.text()
+        if ft == "":
+            foot = 0
+        else:
+            foot = int(maxRow) - int(ft) - 1
+        headers = ['種別','フォルダ名','ファイル名','画像ファイル名']
+        df = pd.read_excel(name, sheet_name=sh, dtype=str, header=None, names=headers, usecols=use_cols, skiprows=sk, skipfooter=foot)
         self.df = df.dropna(subset=['画像ファイル名'])
-        self.np_model = IE_Model(self.df, headders) 
+        # 重複チェック
+        dup = self.df[self.df.duplicated(subset='画像ファイル名', keep='first')]
+        if dup.empty == False:
+            status_text = ""
+            for row in dup.itertuples():
+                status_text = f'{row[2]}----{row[3]}が重複しています'
+                self.ui.listWidget.addItem(status_text)
+            self.ui.listWidget.addItem("---------------------------------------------------")
+            # self.re_model.sort('画像名', True)
+            return "break"
+        self.np_model = IE_Model(self.df, headers) 
         self.ui.tableView.setModel(self.np_model)
         self.ui.tableView.setColumnWidth(0, 40)
-        self.ui.tableView.setColumnWidth(1, 400)
-        self.ui.tableView.setColumnWidth(2, 400)
+        self.ui.tableView.setColumnWidth(1, 300)
+        self.ui.tableView.setColumnWidth(2, 350)
         self.ui.tableView.setColumnWidth(3, 80)
 
     def openFiles(self):
-        fileNames, selectedFilter = QFileDialog.getOpenFileNames(self, 'Open files', os.path.expanduser('~') + '/Desktop')
+        # fileNames, selectedFilter = QFileDialog.getOpenFileNames(self, 'Open files', os.path.expanduser('~') + '/Desktop')
+        dir_path = QFileDialog.getExistingDirectory(self, 'Open Directory', os.path.expanduser('~') + '/Desktop')
+        if dir_path == "":
+            return "break"
+        self.ui.label_7.setText(dir_path)
+        fileNames = glob.glob(f'{dir_path}/*')
         self.image_list = fileNames
         flList = []
         self.fnames = []
@@ -97,14 +152,46 @@ class Application(QMainWindow):
                 fname = os.path.splitext(os.path.basename(name))[0]
                 flList.append([name, fname, fSize])
                 self.fnames.append(os.path.basename(name))
-            headders = ['ファイルパス', '画像ファイル名','ファイルサイズ']
-            self.flList_df = pd.DataFrame(flList, columns=headders)
+            column_list = ['ファイルパス', '画像ファイル名','ファイルサイズ']
+            self.flList_df = pd.DataFrame(flList, columns=column_list).sort_values('画像ファイル名')
             fl_df = self.flList_df.iloc[:,1:]
+            headders = ['画像ファイル名','ファイルサイズ']
             self.np_model = IE_Model(fl_df, headders) 
             self.ui.tableView_2.setModel(self.np_model)
             self.ui.tableView_2.setColumnWidth(0, 100)
         else:
             pass
+        # df_list = pd.merge(self.df, self.flList_df.drop('ファイルサイズ', axis=1), on='画像ファイル名', how='left')
+        df_list = pd.merge(self.df, self.flList_df.drop('ファイルサイズ', axis=1), on='画像ファイル名', how='outer')
+        los_text = ""
+        self.ui.listWidget.clear()
+        for index, row in df_list.iterrows():
+            if str(row[4]) == 'nan':
+                los_text = f'{row[3]}が画像フォルダにありません。'
+                self.ui.listWidget.addItem(los_text)
+            if str(row[2]) == 'nan':
+                los_text = f'{row[3]}がリストにありません。'
+                self.ui.listWidget.addItem(los_text)
+        if los_text != "":
+            return "break"
+
+    def select_file_node(self, index):
+        index_col = index.column()
+        index_row = index.row()
+
+        path_text = self.flList_df.iloc[index_row,0] 
+        self.imageView(path_text)
+
+    def imageView(self, f_path = ""):
+        f = f_path
+        self.scene.clear()
+        ixmap = QPixmap(f)
+        self.ixmap_height = ixmap.height()
+        self.ixmap_width = ixmap.width()
+        self.pic_Item = QGraphicsPixmapItem(ixmap)
+        self.scene.addItem(self.pic_Item)
+        self.scene.setSceneRect(0.0,0.0,self.ixmap_width,self.ixmap_height)
+        self.ui.graphicsView.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
 
     def convert_size(self, size, unit="B"):
         units = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB")
@@ -116,8 +203,18 @@ class Application(QMainWindow):
     def file_rename(self):
         # mogrify -path ../rev -resize 50% -quality 100 ./
         resize = int(self.ui.lineEdit_4.text())
+        df_rename = pd.merge(self.df, self.flList_df.drop('ファイルサイズ', axis=1), on='画像ファイル名', how='right')
+        los_text = ""
+        self.ui.listWidget.clear()
+        for index, row in df_rename.iterrows():
+            if str(row[2]) == 'nan':
+                los_text = f'{row[3]}がリストにありません。'
+                self.ui.listWidget.addItem(los_text)
+        if los_text != "":
+            return "break"
+        flList_cunt = len(self.flList_df)
+        df_count = len(df_rename)
         dir_path = QFileDialog.getExistingDirectory(self, 'Select Folder', os.path.expanduser('~') + '/Desktop')
-        df_rename = pd.merge(self.df, self.flList_df.drop('ファイルサイズ', axis=1), on='画像ファイル名')
         for column_name, item in df_rename.iterrows():
             origin_path = f'{item[4]}'
             folder_name = f'{dir_path}/{item[0]}/{item[1]}/'
@@ -194,7 +291,49 @@ class Application(QMainWindow):
             img.width = width
             img.height = height
             return img
+    
+    def delItem(self):
+        indexes = self.ui.tableView.selectedIndexes()
+        
+        if self.np_model.rowCount() == 0:
+            return
+    
+        if len(indexes) == 0:
+            self.np_model.removeItem( self.np_model.rowCount()-1 )
+            return
+        
+        rows = set( [ index.row() for index in indexes ] )
+        for row in list(rows)[::-1]:
+            self.np_model.removeItem( row )
+    def contextMenu(self, point):
+        self.menu = QtWidgets.QMenu(self)
+        # self.menu.addAction('Insert', self.insertRow)
+        self.menu.addAction('Delete', self.delItem)
+        self.menu.exec_( self.focusWidget().mapToGlobal(point) )
 
+class MyLineEdit(QLineEdit):
+    def mouseDoubleClickEvent(self, e):
+        super().mouseDoubleClickEvent(e)
+        point_x = e.x()
+        point_y = e.y()
+        print(point_x)
+
+        idx = self.cursorPositionAt(e.pos())
+        word = self.text()
+        print(word)
+        """
+        start = 0
+        end = len(word)
+
+        for n in [i for i,c in enumerate(word) if c in "_ "]:
+            if n >= idx:
+                end = n
+                break
+            if n < idx:
+                start = n+1
+
+        self.setSelection(start, end-start)
+        """
 
 class IE_Model(QAbstractTableModel):
     def __init__(self, list, headers = [], rows = [], parent = None):
@@ -239,11 +378,17 @@ class IE_Model(QAbstractTableModel):
             else:
                 return f'{section + 1}'
 
+    def removeItem(self, row, parent=QtCore.QModelIndex()):
+        self.beginRemoveRows(parent, row, row)
+        del self.items[row]
+        self.endRemoveRows()
+    """
     def removeItems(self, rows):
         for row in rows[::-1]:
             self.beginRemoveRows(QtCore.QModelIndex(), row, row)
             del self.list[row]
             self.endRemoveRows() 
+    """
 
     def addItem(self, row, item, parent=QtCore.QModelIndex()):
         self.beginInsertRows(parent, row, row)
