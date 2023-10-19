@@ -49,6 +49,8 @@ class Application(QMainWindow):
         self.ui.tableView_2.clicked.connect(lambda: self.select_file_node(self.ui.tableView_2.currentIndex()))
         self.ui.tableView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.tableView.customContextMenuRequested.connect(self.contextMenu)
+        self.ui.tableView_2.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.tableView_2.customContextMenuRequested.connect(self.contextMenu_2)
         QTimer.singleShot(1, self.imageView)
 
 
@@ -82,6 +84,7 @@ class Application(QMainWindow):
         filepath = fname[0]
         if filepath == "":
             return "break"
+        self.ui.listWidget.clear()
         self.ui.lineEdit.setText(filepath)
         self.wb = openpyxl.load_workbook(filepath)
         active_sheet_name = self.wb.active.title
@@ -91,6 +94,7 @@ class Application(QMainWindow):
         self.wb.close()
 
     def excel_read(self):
+        self.ui.listWidget.clear()
         sk = int(self.ui.lineEdit_7.text())
         """
         sk_list = []
@@ -124,9 +128,9 @@ class Application(QMainWindow):
         if dup.empty == False:
             status_text = ""
             for row in dup.itertuples():
-                status_text = f'{row[2]}----{row[3]}が重複しています'
+                status_text = f'{row[2]}---{row[3]}が重複しています'
                 self.ui.listWidget.addItem(status_text)
-            self.ui.listWidget.addItem("---------------------------------------------------")
+            self.ui.listWidget.addItem("-----------------------------------")
             # self.re_model.sort('画像名', True)
             return "break"
         self.np_model = IE_Model(self.df, headers) 
@@ -136,7 +140,7 @@ class Application(QMainWindow):
         self.ui.tableView.setColumnWidth(2, 350)
         self.ui.tableView.setColumnWidth(3, 80)
 
-    def openFiles(self):
+    def openFiles(self, select_type = 0):
         # fileNames, selectedFilter = QFileDialog.getOpenFileNames(self, 'Open files', os.path.expanduser('~') + '/Desktop')
         dir_path = QFileDialog.getExistingDirectory(self, 'Open Directory', os.path.expanduser('~') + '/Desktop')
         if dir_path == "":
@@ -148,19 +152,35 @@ class Application(QMainWindow):
         self.fnames = []
         if 0 < len(fileNames):
             for name in fileNames:
-                fSize = self.convert_size(os.path.getsize(name), 'MB') 
-                fname = os.path.splitext(os.path.basename(name))[0]
-                flList.append([name, fname, fSize])
-                self.fnames.append(os.path.basename(name))
+                ext = os.path.splitext(os.path.basename(name))[1]
+                if ext != ".xlsx":
+                    fSize = self.convert_size(os.path.getsize(name), 'MB') 
+                    fname = os.path.splitext(os.path.basename(name))[0]
+                    flList.append([name, fname, fSize])
+                    self.fnames.append(os.path.basename(name))
             column_list = ['ファイルパス', '画像ファイル名','ファイルサイズ']
+            """
+            flList_df = pd.DataFrame(flList, columns=column_list)
+            flList_df['画像ファイル名'] = flList_df['画像ファイル名'].astype(str).str.zfill(1)
+            self.flList_df = flList_df.sort_values('画像ファイル名')
+            """
+
             self.flList_df = pd.DataFrame(flList, columns=column_list).sort_values('画像ファイル名')
             fl_df = self.flList_df.iloc[:,1:]
             headders = ['画像ファイル名','ファイルサイズ']
-            self.np_model = IE_Model(fl_df, headders) 
-            self.ui.tableView_2.setModel(self.np_model)
+            self.im_model = IM_Model(fl_df, headders) 
+            self.ui.tableView_2.setModel(self.im_model)
             self.ui.tableView_2.setColumnWidth(0, 100)
         else:
             pass
+        size_text = ""
+        for index, row in self.flList_df.iterrows():
+            mb = float(row[2].replace(" MB",""))
+            if mb < float(3.5):
+                size_text = f'{row[1]}が3.5メガ未満です。'
+                self.ui.listWidget.addItem(size_text)
+        if size_text != "":
+            return "break"
         # df_list = pd.merge(self.df, self.flList_df.drop('ファイルサイズ', axis=1), on='画像ファイル名', how='left')
         df_list = pd.merge(self.df, self.flList_df.drop('ファイルサイズ', axis=1), on='画像ファイル名', how='outer')
         los_text = ""
@@ -215,12 +235,16 @@ class Application(QMainWindow):
         flList_cunt = len(self.flList_df)
         df_count = len(df_rename)
         dir_path = QFileDialog.getExistingDirectory(self, 'Select Folder', os.path.expanduser('~') + '/Desktop')
+        if dir_path == "":
+            return "break"
         for column_name, item in df_rename.iterrows():
             origin_path = f'{item[4]}'
             folder_name = f'{dir_path}/{item[0]}/{item[1]}/'
+            folder_name = folder_name.replace(':','：')
             if os.path.exists(folder_name) == False:
                 os.makedirs(folder_name)
             rename_path = f'{dir_path}/{item[0]}/{item[1]}/{item[2]}'
+            rename_path = rename_path.replace(':','：')
             if resize != 100:
                 if self.ui.comboBox_2.currentText() == "%":
                     f_resize = f'{resize}%'
@@ -229,7 +253,6 @@ class Application(QMainWindow):
                 r = subprocess.run(['convert', f'{origin_path}', '-resize', f_resize, f'{rename_path}'], stdout=subprocess.PIPE)
             else:
                 shutil.copy2(origin_path, rename_path)
-            # print(origin_path, rename_path)
         ms_text = "終了しました"
         msgBox = QMessageBox()
         msgBox.setText(ms_text)
@@ -292,35 +315,48 @@ class Application(QMainWindow):
             img.height = height
             return img
     
-    def delItem(self):
-        indexes = self.ui.tableView.selectedIndexes()
+    def delItem(self, view, model, list_type = 0):
+        indexes = view.selectedIndexes()
         
-        if self.np_model.rowCount() == 0:
+        if model.rowCount() == 0:
             return
     
         if len(indexes) == 0:
-            self.np_model.removeItem( self.np_model.rowCount()-1 )
+            model.removeItem(model.rowCount()-1)
             return
         
-        rows = set( [ index.row() for index in indexes ] )
-        for row in list(rows)[::-1]:
-            self.np_model.removeItem( row )
+        rows = set([index.row() for index in indexes])
+        if list_type == 0:
+            self.df = model.removeItems(rows)
+        else:
+            self.fl_df = model.removeItems(rows)
+            for row in list(rows)[::-1]:
+                self.flList_df = self.flList_df.drop([row])
+            self.flList_df = self.flList_df.reset_index(drop=True)
+            # self.flList_df = self.flList_df.iloc[]
+
     def contextMenu(self, point):
         self.menu = QtWidgets.QMenu(self)
         # self.menu.addAction('Insert', self.insertRow)
-        self.menu.addAction('Delete', self.delItem)
-        self.menu.exec_( self.focusWidget().mapToGlobal(point) )
+        self.menu.addAction('', self.delItem)
+        self.menu.addAction('Delete', lambda:self.delItem(self.ui.tableView, self.np_model))
+        self.menu.exec_(self.focusWidget().mapToGlobal(point))
+
+    def contextMenu_2(self, point):
+        self.menu = QtWidgets.QMenu(self)
+        # self.menu.addAction('Insert', self.insertRow)
+        self.menu.addAction('', self.delItem)
+        self.menu.addAction('Delete', lambda:self.delItem(self.ui.tableView_2, self.im_model, 1))
+        self.menu.exec_(self.focusWidget().mapToGlobal(point))
 
 class MyLineEdit(QLineEdit):
     def mouseDoubleClickEvent(self, e):
         super().mouseDoubleClickEvent(e)
         point_x = e.x()
         point_y = e.y()
-        print(point_x)
 
         idx = self.cursorPositionAt(e.pos())
         word = self.text()
-        print(word)
         """
         start = 0
         end = len(word)
@@ -335,12 +371,12 @@ class MyLineEdit(QLineEdit):
         self.setSelection(start, end-start)
         """
 
-class IE_Model(QAbstractTableModel):
+class IM_Model(QAbstractTableModel):
     def __init__(self, list, headers = [], rows = [], parent = None):
         QAbstractTableModel.__init__(self, parent)
         self.list = list
         self.headers = headers
-        self.rows = rows
+        # self.rows = rows
         self.db_list = []
         self.items = []
 
@@ -380,16 +416,84 @@ class IE_Model(QAbstractTableModel):
 
     def removeItem(self, row, parent=QtCore.QModelIndex()):
         self.beginRemoveRows(parent, row, row)
-        del self.items[row]
+        # del self.list[row]
         self.endRemoveRows()
-    """
-    def removeItems(self, rows):
-        for row in rows[::-1]:
-            self.beginRemoveRows(QtCore.QModelIndex(), row, row)
-            del self.list[row]
-            self.endRemoveRows() 
-    """
 
+    def removeItems(self, rows):
+        self.list = self.list.reset_index(drop=True)
+        for row in list(rows)[::-1]:
+            # row = row + 1
+            self.beginRemoveRows(QtCore.QModelIndex(), row, row)
+            # del self.list[row]
+            self.list = self.list.drop([row])
+            self.endRemoveRows() 
+        self.list = self.list.reset_index(drop=True)
+        return self.list
+    
+    def addItem(self, row, item, parent=QtCore.QModelIndex()):
+        self.beginInsertRows(parent, row, row)
+        self.list.insert(row, item)
+        self.endInsertRows()
+
+class IE_Model(QAbstractTableModel):
+    def __init__(self, list, headers = [], rows = [], parent = None):
+        QAbstractTableModel.__init__(self, parent)
+        self.list = list
+        self.headers = headers
+        # self.rows = rows
+        self.db_list = []
+        self.items = []
+
+    def rowCount(self, parent = None):
+        return len(self.list)
+
+    def columnCount(self, parent = None):
+        return len(self.list.columns)
+
+    def flags(self, index):
+        return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def data(self, index, role):
+        row = index.row()
+        column = index.column()
+        value = self.list.iat[row, column]
+
+        if role == Qt.EditRole:
+            value = self.list.iat[row, column]
+            return value
+
+        if role == Qt.DisplayRole:
+            row = index.row()
+            column = index.column()
+            value = self.list.iat[row, column]
+            return value
+
+    def headerData(self, section, orientation, role):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                if section < len(self.headers):
+                    return self.headers[section]
+                else:
+                    return "not implemented"
+            else:
+                return f'{section + 1}'
+
+    def removeItem(self, row, parent=QtCore.QModelIndex()):
+        self.beginRemoveRows(parent, row, row)
+        # del self.list[row]
+        self.endRemoveRows()
+
+    def removeItems(self, rows):
+        self.list = self.list.reset_index(drop=True)
+        for row in list(rows)[::-1]:
+            # row = row + 1
+            self.beginRemoveRows(QtCore.QModelIndex(), row, row)
+            # del self.list[row]
+            self.list = self.list.drop([row])
+            self.endRemoveRows() 
+        self.list = self.list.reset_index(drop=True)
+        return self.list
+    
     def addItem(self, row, item, parent=QtCore.QModelIndex()):
         self.beginInsertRows(parent, row, row)
         self.list.insert(row, item)
@@ -419,7 +523,6 @@ def resource_path(relative):
 
 def main():
     app = QApplication(sys.argv)
-    # print(QtWidgets.QStyleFactory.keys())
     app.setWindowIcon(QIcon(resource_path('image/re.png')))
     app.setStyle(QtWidgets.QStyleFactory.create('Fusion')) # won't work on windows style.
     main_app = Application(None)

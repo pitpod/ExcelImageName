@@ -95,7 +95,7 @@
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1,1,2,4,0,2,4,1,1,1,1,1">
+     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1,1,2,4,2,2,2,3,1,1,1,1,1">
       <item>
        <widget class="QLabel" name="label_6">
         <property name="text">
@@ -129,7 +129,14 @@
       <item>
        <widget class="QPushButton" name="pushButton_3">
         <property name="text">
-         <string>画像選択</string>
+         <string>画像フォルダ選択</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_7">
+        <property name="text">
+         <string>画像ファイル選択</string>
         </property>
        </widget>
       </item>
