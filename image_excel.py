@@ -51,6 +51,7 @@ class Application(QMainWindow):
         self.ui.tableView.customContextMenuRequested.connect(self.contextMenu)
         self.ui.tableView_2.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.tableView_2.customContextMenuRequested.connect(self.contextMenu_2)
+        self.ui.pushButton_8.clicked.connect(lambda: self.startRowCopy())
         QTimer.singleShot(1, self.imageView)
 
 
@@ -85,6 +86,7 @@ class Application(QMainWindow):
         if filepath == "":
             return "break"
         self.ui.listWidget.clear()
+        self.ui.comboBox.clear()
         self.ui.lineEdit.setText(filepath)
         self.wb = openpyxl.load_workbook(filepath)
         active_sheet_name = self.wb.active.title
@@ -92,6 +94,11 @@ class Application(QMainWindow):
         self.ui.comboBox.addItems(sheets)
         self.ui.comboBox.setCurrentText(active_sheet_name)
         self.wb.close()
+
+    def startRowCopy(self):
+        nextStart = self.ui.lineEdit_8.text()
+        self.ui.lineEdit_7.setText(nextStart)
+        self.ui.lineEdit_8.clear()
 
     def excel_read(self):
         self.ui.listWidget.clear()
@@ -121,6 +128,7 @@ class Application(QMainWindow):
         else:
             foot = int(maxRow) - int(ft) - 1
         headers = ['種別','フォルダ名','ファイル名','画像ファイル名']
+        # headers = ['種別', 'ブックNo','フォルダ名','ファイル名','画像ファイル名']
         df = pd.read_excel(name, sheet_name=sh, dtype=str, header=None, names=headers, usecols=use_cols, skiprows=sk, skipfooter=foot)
         self.df = df.dropna(subset=['画像ファイル名'])
         # 重複チェック
@@ -239,11 +247,13 @@ class Application(QMainWindow):
             return "break"
         for column_name, item in df_rename.iterrows():
             origin_path = f'{item[4]}'
-            folder_name = f'{dir_path}/{item[0]}/{item[1]}/'
+            item_1 = item[1].replace('/', '／')
+            folder_name = f'{dir_path}/{item[0]}/{item_1}/'
             folder_name = folder_name.replace(':','：')
             if os.path.exists(folder_name) == False:
                 os.makedirs(folder_name)
-            rename_path = f'{dir_path}/{item[0]}/{item[1]}/{item[2]}'
+            item_2 = item[2].replace('/', '／')
+            rename_path = f'{dir_path}/{item[0]}/{item_1}/{item_2}'
             rename_path = rename_path.replace(':','：')
             if resize != 100:
                 if self.ui.comboBox_2.currentText() == "%":
