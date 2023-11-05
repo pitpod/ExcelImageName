@@ -40,6 +40,7 @@ class Application(QMainWindow):
         self.ui.lineEdit_3.setText(self.name_image_columns[3])
         self.ui.lineEdit_4.setText(self.name_image_columns[4])
         self.ui.lineEdit_7.setText("3")
+        self.ui.lineEdit_9.setText(self.name_image_columns[5])
         self.ui.pushButton.clicked.connect(lambda: self.excel_select())
         self.ui.pushButton_2.clicked.connect(lambda: self.insert_image())
         self.ui.pushButton_3.clicked.connect(lambda: self.openFiles())
@@ -65,7 +66,8 @@ class Application(QMainWindow):
                 name_cell = conf.get('file_column')
                 image_cell = conf.get('image_column')
                 image_size = conf.get('image_size')
-            return type_cell, folder_cell, name_cell, image_cell, image_size
+                book_no = conf.get('book_no')
+            return type_cell, folder_cell, name_cell, image_cell, image_size, book_no
         else:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.config_ini_path)
 
@@ -90,10 +92,12 @@ class Application(QMainWindow):
         self.ui.lineEdit.setText(filepath)
         self.wb = openpyxl.load_workbook(filepath)
         active_sheet_name = self.wb.active.title
+        self.wsn = active_sheet_name
         sheets = self.wb.sheetnames
         self.ui.comboBox.addItems(sheets)
         self.ui.comboBox.setCurrentText(active_sheet_name)
         self.wb.close()
+
 
     def startRowCopy(self):
         nextStart = self.ui.lineEdit_8.text()
@@ -102,7 +106,7 @@ class Application(QMainWindow):
 
     def excel_read(self):
         self.ui.listWidget.clear()
-        sk = int(self.ui.lineEdit_7.text())
+        self.scene.clear()
         """
         sk_list = []
         for i in range(3, sk):
@@ -114,7 +118,8 @@ class Application(QMainWindow):
         folder_col = self.abc.index(self.name_image_columns[1])
         file_col = self.abc.index(self.name_image_columns[2])
         img_col = self.abc.index(self.name_image_columns[3])
-        use_cols = [type_col, folder_col, file_col, img_col]
+        bookno_col = self.abc.index(self.name_image_columns[5])
+        use_cols = [type_col, bookno_col, folder_col, file_col, img_col]
 
         ws = self.wb[sh]
         maxRow = ws.max_row + 1
@@ -122,21 +127,40 @@ class Application(QMainWindow):
             if ws.cell(row=i, column=img_col + 1).value != None:
                 last = i
                 break
+        bkn = self.ui.lineEdit_10.text()
+        if bkn == "":
+            pass
+        else:
+            bkncell = self.ui.lineEdit_9.text()
+            # df = df[df['ブックNo'] == bkn]
+            # ws = self.wb[self.wsn]
+            ret = self.search_column(ws[bkncell], bkn)
+            srow = ret[0]
+            srow = srow.replace(bkncell,"")
+            srow = int(srow) - 1
+            erow = ret[-1]
+            erow = erow.replace(bkncell,"")
+            erow = int(erow)
+            self.ui.lineEdit_7.setText(str(srow))
+            self.ui.lineEdit_8.setText(str(erow))
+
+        sk = int(self.ui.lineEdit_7.text())
         ft = self.ui.lineEdit_8.text()
         if ft == "":
             foot = 0
         else:
             foot = int(maxRow) - int(ft) - 1
-        headers = ['種別','フォルダ名','ファイル名','画像ファイル名']
-        # headers = ['種別', 'ブックNo','フォルダ名','ファイル名','画像ファイル名']
+        # headers = ['種別','フォルダ名','ファイル名','画像ファイル名']
+        headers = ['種別', 'ブックNo','フォルダ名','ファイル名','画像ファイル名']
         df = pd.read_excel(name, sheet_name=sh, dtype=str, header=None, names=headers, usecols=use_cols, skiprows=sk, skipfooter=foot)
+        
         self.df = df.dropna(subset=['画像ファイル名'])
         # 重複チェック
         dup = self.df[self.df.duplicated(subset='画像ファイル名', keep='first')]
         if dup.empty == False:
             status_text = ""
             for row in dup.itertuples():
-                status_text = f'{row[2]}---{row[3]}が重複しています'
+                status_text = f'{row[3]}---{row[4]}が重複しています'
                 self.ui.listWidget.addItem(status_text)
             self.ui.listWidget.addItem("-----------------------------------")
             # self.re_model.sort('画像名', True)
@@ -144,10 +168,27 @@ class Application(QMainWindow):
         self.np_model = IE_Model(self.df, headers) 
         self.ui.tableView.setModel(self.np_model)
         self.ui.tableView.setColumnWidth(0, 40)
-        self.ui.tableView.setColumnWidth(1, 300)
-        self.ui.tableView.setColumnWidth(2, 350)
-        self.ui.tableView.setColumnWidth(3, 80)
+        self.ui.tableView.setColumnWidth(1, 60)
+        self.ui.tableView.setColumnWidth(2, 300)
+        self.ui.tableView.setColumnWidth(3, 360)
+        self.ui.tableView.setColumnWidth(4, 80)
 
+    # 特定の列を検索
+    def search_column(self, column, keyword):
+        result = []
+        for cell in column:
+            # セルのデータを文字列に変換
+            try:
+                value = str(cell.value)
+            # 文字列に変換できないデータはスキップ
+            except:
+                continue
+            # キーワードに一致するセルの番地を取得
+            if value == keyword:
+                cell_address = openpyxl.utils.get_column_letter(cell.column) +  str(cell.row)
+                result.append(cell_address)
+    
+        return result
     def openFiles(self, select_type = 0):
         # fileNames, selectedFilter = QFileDialog.getOpenFileNames(self, 'Open files', os.path.expanduser('~') + '/Desktop')
         dir_path = QFileDialog.getExistingDirectory(self, 'Open Directory', os.path.expanduser('~') + '/Desktop')
@@ -195,10 +236,10 @@ class Application(QMainWindow):
         self.ui.listWidget.clear()
         for index, row in df_list.iterrows():
             if str(row[4]) == 'nan':
-                los_text = f'{row[3]}が画像フォルダにありません。'
+                los_text = f'{row[4]}が画像フォルダにありません。'
                 self.ui.listWidget.addItem(los_text)
             if str(row[2]) == 'nan':
-                los_text = f'{row[3]}がリストにありません。'
+                los_text = f'{row[4]}がリストにありません。'
                 self.ui.listWidget.addItem(los_text)
         if los_text != "":
             return "break"
@@ -235,8 +276,8 @@ class Application(QMainWindow):
         los_text = ""
         self.ui.listWidget.clear()
         for index, row in df_rename.iterrows():
-            if str(row[2]) == 'nan':
-                los_text = f'{row[3]}がリストにありません。'
+            if str(row[3]) == 'nan':
+                los_text = f'{row[4]}がリストにありません。'
                 self.ui.listWidget.addItem(los_text)
         if los_text != "":
             return "break"
@@ -245,24 +286,35 @@ class Application(QMainWindow):
         dir_path = QFileDialog.getExistingDirectory(self, 'Select Folder', os.path.expanduser('~') + '/Desktop')
         if dir_path == "":
             return "break"
+        dup_no = 0
         for column_name, item in df_rename.iterrows():
-            origin_path = f'{item[4]}'
-            item_1 = item[1].replace('/', '／')
+            origin_path = f'{item[5]}'
+            item_1 = item[2].replace('/', '／')
             folder_name = f'{dir_path}/{item[0]}/{item_1}/'
             folder_name = folder_name.replace(':','：')
             if os.path.exists(folder_name) == False:
                 os.makedirs(folder_name)
-            item_2 = item[2].replace('/', '／')
+            item_2 = item[3].replace('/', '／')
             rename_path = f'{dir_path}/{item[0]}/{item_1}/{item_2}'
             rename_path = rename_path.replace(':','：')
-            if resize != 100:
-                if self.ui.comboBox_2.currentText() == "%":
-                    f_resize = f'{resize}%'
-                else:
-                    f_resize = f'{resize}x{resize}'
-                r = subprocess.run(['convert', f'{origin_path}', '-resize', f_resize, f'{rename_path}'], stdout=subprocess.PIPE)
+
+            if os.path.isfile(rename_path):
+                los_text = f'{os.path.basename(rename_path)}はすでにあります。'
+                self.ui.listWidget.addItem(los_text)
+                """
+                dup_no += 1
+                root, ext = os.path.splitext(rename_path)
+                rename_path = f'{root}_重複{dup_no}{ext}'
+                """
             else:
-                shutil.copy2(origin_path, rename_path)
+                if resize != 100:
+                    if self.ui.comboBox_2.currentText() == "%":
+                        f_resize = f'{resize}%'
+                    else:
+                        f_resize = f'{resize}x{resize}'
+                    r = subprocess.run(['convert', f'{origin_path}', '-resize', f_resize, f'{rename_path}'], stdout=subprocess.PIPE)
+                else:
+                    shutil.copy2(origin_path, rename_path)
         ms_text = "終了しました"
         msgBox = QMessageBox()
         msgBox.setText(ms_text)

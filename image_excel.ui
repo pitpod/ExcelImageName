@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1492</width>
-    <height>900</height>
+    <width>1658</width>
+    <height>918</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout" stretch="10,2,4,0,1,1,1,1,1,1,1,1">
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="10,2,4,1,1,1,1,1,1,1,1,1,1,1">
       <item>
        <widget class="QLineEdit" name="lineEdit"/>
       </item>
@@ -52,6 +52,16 @@
       </item>
       <item>
        <widget class="QLineEdit" name="lineEdit_5"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>ブックNo列</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_9"/>
       </item>
       <item>
        <widget class="QLabel" name="label_5">
@@ -95,7 +105,17 @@
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1,1,1,2,4,2,2,2,3,1,1,1,1,1">
+     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1,1,1,1,1,2,5,2,2,2,1,1,1,1,1">
+      <item>
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>ブックNo</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_10"/>
+      </item>
       <item>
        <widget class="QLabel" name="label_6">
         <property name="text">
@@ -137,13 +157,6 @@
        <widget class="QPushButton" name="pushButton_3">
         <property name="text">
          <string>画像フォルダ選択</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_7">
-        <property name="text">
-         <string>画像ファイル選択</string>
         </property>
        </widget>
       </item>
@@ -235,7 +248,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1492</width>
+     <width>1658</width>
      <height>24</height>
     </rect>
    </property>
