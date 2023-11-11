@@ -54,6 +54,11 @@ class Application(QMainWindow):
         self.ui.tableView_2.customContextMenuRequested.connect(self.contextMenu_2)
         self.ui.pushButton_8.clicked.connect(lambda: self.startRowCopy())
         QTimer.singleShot(1, self.imageView)
+        headders = ['画像ファイル名','ファイルサイズ']
+        clear_list = [["",""]]
+        clear_df = pd.DataFrame(clear_list)
+        self.clear_model = IM_Model(clear_df, headders) 
+        self.ui.tableView_2.setModel(self.clear_model)
 
 
     def config_read(self):
@@ -100,11 +105,14 @@ class Application(QMainWindow):
 
 
     def startRowCopy(self):
+
         nextStart = self.ui.lineEdit_8.text()
         self.ui.lineEdit_7.setText(nextStart)
         self.ui.lineEdit_8.clear()
 
     def excel_read(self):
+        # im_model = IM_Model() 
+        self.ui.tableView_2.setModel(self.clear_model)
         self.ui.listWidget.clear()
         self.scene.clear()
         """
@@ -153,7 +161,19 @@ class Application(QMainWindow):
         # headers = ['種別','フォルダ名','ファイル名','画像ファイル名']
         headers = ['種別', 'ブックNo','フォルダ名','ファイル名','画像ファイル名']
         df = pd.read_excel(name, sheet_name=sh, dtype=str, header=None, names=headers, usecols=use_cols, skiprows=sk, skipfooter=foot)
-        
+        serila_list = []
+        if self.ui.checkBox_2.isChecked():
+            for num in range(len(ret)):
+                string = str(num + 1).zfill(3)
+                serila_list.append(string)
+            # serial_num = pd.RangeIndex(start=1, stop=len(ret) + 1, step=1).astype(str)
+            # serial_num = serial_num.to_list()
+            # serial_num = serial_num.astype(str)
+            # 各セルに対して関数を適用
+            width = 4  # 揃えたい桁数
+            # formatted_df = serial_num.applymap(lambda x: self.format_cell(x, width))
+            df['画像ファイル名'] = serila_list
+        print(df) 
         self.df = df.dropna(subset=['画像ファイル名'])
         # 重複チェック
         dup = self.df[self.df.duplicated(subset='画像ファイル名', keep='first')]
@@ -172,7 +192,9 @@ class Application(QMainWindow):
         self.ui.tableView.setColumnWidth(2, 300)
         self.ui.tableView.setColumnWidth(3, 360)
         self.ui.tableView.setColumnWidth(4, 80)
-
+    # 各セルの値を指定の桁数に揃える関数を定義
+    def format_cell(self, value, width):
+        return f"{value:0{width}}"
     # 特定の列を検索
     def search_column(self, column, keyword):
         result = []
@@ -190,6 +212,7 @@ class Application(QMainWindow):
     
         return result
     def openFiles(self, select_type = 0):
+        self.scene.clear()
         # fileNames, selectedFilter = QFileDialog.getOpenFileNames(self, 'Open files', os.path.expanduser('~') + '/Desktop')
         dir_path = QFileDialog.getExistingDirectory(self, 'Open Directory', os.path.expanduser('~') + '/Desktop')
         if dir_path == "":
@@ -284,18 +307,27 @@ class Application(QMainWindow):
         flList_cunt = len(self.flList_df)
         df_count = len(df_rename)
         dir_path = QFileDialog.getExistingDirectory(self, 'Select Folder', os.path.expanduser('~') + '/Desktop')
+        type_text = self.ui.lineEdit_11.text()
+        book_no = self.ui.lineEdit_10.text()
+
+        if self.ui.checkBox.isChecked():
+            dir_path = f'{dir_path}/{type_text}_{book_no}'
         if dir_path == "":
             return "break"
         dup_no = 0
         for column_name, item in df_rename.iterrows():
             origin_path = f'{item[5]}'
             item_1 = item[2].replace('/', '／')
-            folder_name = f'{dir_path}/{item[0]}/{item_1}/'
+            if type_text != "":
+                item_0 = type_text
+            else:
+                item_0 = item[0]
+            folder_name = f'{dir_path}/{item_0}/{item_1}/'
             folder_name = folder_name.replace(':','：')
             if os.path.exists(folder_name) == False:
                 os.makedirs(folder_name)
             item_2 = item[3].replace('/', '／')
-            rename_path = f'{dir_path}/{item[0]}/{item_1}/{item_2}'
+            rename_path = f'{dir_path}/{item_0}/{item_1}/{item_2}'
             rename_path = rename_path.replace(':','：')
 
             if os.path.isfile(rename_path):
