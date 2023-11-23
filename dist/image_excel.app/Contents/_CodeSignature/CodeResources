@@ -3490,10 +3490,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			Sq6wu6khigE0tzdMTfX6C2IABDY=
+			1UifleCIp5/u44VFjJkuTBAFMpk=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"737327ce35437c8010c38ca0321f56c6f915a435" or cdhash H"4aaeb0bba9218a0134b7374c4df5fa0b62000436"</string>
+			<string>cdhash H"77550062f69280ce25670074b44a433a821f48dd" or cdhash H"d5489f95e088a79feee385458c992e4c10053299"</string>
 		</dict>
 		<key>MacOS/image</key>
 		<dict>

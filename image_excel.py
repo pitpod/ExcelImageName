@@ -16,7 +16,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtGui import QIcon, QPaintDevice, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QAbstractTableModel
 from PyQt5.QtWidgets import QMainWindow, QLineEdit, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QSizePolicy, QGraphicsPixmapItem
-
+from configobj import ConfigObj
 from Ui_image_excel import Ui_MainWindow
 
 class Application(QMainWindow):
@@ -73,6 +73,16 @@ class Application(QMainWindow):
                 image_size = conf.get('image_size')
                 book_no = conf.get('book_no')
             return type_cell, folder_cell, name_cell, image_cell, image_size, book_no
+        else:
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.config_ini_path)
+
+    def config_path(self):
+        if os.path.exists(self.config_ini_path):
+            with open(self.config_ini_path, encoding='utf-8') as fp:
+                self.config_ini.read_file(fp)
+                path = self.config_ini['PATH']
+                cur_path = path.get('cur_path')
+            return cur_path
         else:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.config_ini_path)
 
@@ -173,7 +183,6 @@ class Application(QMainWindow):
             width = 4  # 揃えたい桁数
             # formatted_df = serial_num.applymap(lambda x: self.format_cell(x, width))
             df['画像ファイル名'] = serila_list
-        print(df) 
         self.df = df.dropna(subset=['画像ファイル名'])
         # 重複チェック
         dup = self.df[self.df.duplicated(subset='画像ファイル名', keep='first')]
@@ -213,10 +222,18 @@ class Application(QMainWindow):
         return result
     def openFiles(self, select_type = 0):
         self.scene.clear()
-        # fileNames, selectedFilter = QFileDialog.getOpenFileNames(self, 'Open files', os.path.expanduser('~') + '/Desktop')
-        dir_path = QFileDialog.getExistingDirectory(self, 'Open Directory', os.path.expanduser('~') + '/Desktop')
+        cur_path = self.config_path()
+        if cur_path == "null":
+            cur_path = os.path.expanduser('~') + '/Desktop'
+
+        dir_path = QFileDialog.getExistingDirectory(self, 'Open Directory', cur_path)
         if dir_path == "":
             return "break"
+        else:
+            new_path = os.path.dirname(dir_path)
+            config = ConfigObj(self.config_ini_path, encoding='utf-8')
+            config['PATH']['cur_path'] = new_path
+            config.write()
         self.ui.label_7.setText(dir_path)
         fileNames = glob.glob(f'{dir_path}/*')
         self.image_list = fileNames

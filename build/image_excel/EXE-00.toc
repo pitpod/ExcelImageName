@@ -59,7 +59,7 @@
  [],
  False,
  False,
- 1699228494,
+ 1699679372,
  [('runw',
    '/Users/matsu/VS_Code/ExcelImageName/eivenv/lib/python3.11/site-packages/PyInstaller/bootloader/Darwin-64bit/runw',
    'EXECUTABLE')])
