@@ -76,12 +76,12 @@ class Application(QMainWindow):
         else:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.config_ini_path)
 
-    def config_path(self):
+    def config_path(self, section):
         if os.path.exists(self.config_ini_path):
             with open(self.config_ini_path, encoding='utf-8') as fp:
                 self.config_ini.read_file(fp)
                 path = self.config_ini['PATH']
-                cur_path = path.get('cur_path')
+                cur_path = path.get(section)
             return cur_path
         else:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.config_ini_path)
@@ -222,9 +222,13 @@ class Application(QMainWindow):
         return result
     def openFiles(self, select_type = 0):
         self.scene.clear()
-        cur_path = self.config_path()
+        image_dir = self.ui.lineEdit_10.text()
+        cur_path = self.config_path("cur_path")
         if cur_path == "null":
             cur_path = os.path.expanduser('~') + '/Desktop'
+        image_dir_path = f'{cur_path}/{image_dir}'
+        if os.path.isdir(image_dir_path):
+            cur_path = image_dir_path
 
         dir_path = QFileDialog.getExistingDirectory(self, 'Open Directory', cur_path)
         if dir_path == "":
@@ -323,7 +327,18 @@ class Application(QMainWindow):
             return "break"
         flList_cunt = len(self.flList_df)
         df_count = len(df_rename)
-        dir_path = QFileDialog.getExistingDirectory(self, 'Select Folder', os.path.expanduser('~') + '/Desktop')
+        out_path = self.config_path("output_path")
+        if out_path == "null":
+            out_path = os.path.expanduser('~') + '/Desktop'
+        dir_path = QFileDialog.getExistingDirectory(self, 'Select Folder', out_path)
+        if dir_path == "":
+            return "break"
+        else:
+            # new_out_path = os.path.dirname(dir_path)
+            new_out_path = dir_path
+            config = ConfigObj(self.config_ini_path, encoding='utf-8')
+            config['PATH']['output_path'] = new_out_path
+            config.write()
         type_text = self.ui.lineEdit_11.text()
         book_no = self.ui.lineEdit_10.text()
 
