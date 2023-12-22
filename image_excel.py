@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 import sys
 import configparser
 import math
@@ -47,6 +48,7 @@ class Application(QMainWindow):
         self.ui.pushButton_4.clicked.connect(lambda: self.excel_read())
         self.ui.pushButton_5.clicked.connect(lambda: self.file_rename())
         self.ui.pushButton_6.clicked.connect(lambda: self.excel_open())
+        self.ui.pushButton_7.clicked.connect(lambda: self.file_move())
         self.ui.tableView_2.clicked.connect(lambda: self.select_file_node(self.ui.tableView_2.currentIndex()))
         self.ui.tableView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.tableView.customContextMenuRequested.connect(self.contextMenu)
@@ -59,6 +61,7 @@ class Application(QMainWindow):
         clear_df = pd.DataFrame(clear_list)
         self.clear_model = IM_Model(clear_df, headders) 
         self.ui.tableView_2.setModel(self.clear_model)
+        self.ui.checkBox.setChecked(True)
 
 
     def config_read(self):
@@ -201,9 +204,13 @@ class Application(QMainWindow):
         self.ui.tableView.setColumnWidth(2, 300)
         self.ui.tableView.setColumnWidth(3, 360)
         self.ui.tableView.setColumnWidth(4, 80)
+
+        # self.ui.pushButton_7.setEnabled(True)
+
     # 各セルの値を指定の桁数に揃える関数を定義
     def format_cell(self, value, width):
         return f"{value:0{width}}"
+
     # 特定の列を検索
     def search_column(self, column, keyword):
         result = []
@@ -220,6 +227,7 @@ class Application(QMainWindow):
                 result.append(cell_address)
     
         return result
+
     def openFiles(self, select_type = 0):
         self.scene.clear()
         image_dir = self.ui.lineEdit_10.text()
@@ -312,6 +320,121 @@ class Application(QMainWindow):
         size = round(size / 1024 ** i, 2)
 
         return f"{size} {units[i]}"
+
+    def file_move(self):
+        self.scene.clear()
+        image_dir = self.ui.lineEdit_10.text()
+        cur_path = self.config_path("cur_path")
+        if cur_path == "null":
+            cur_path = os.path.expanduser('~') + '/Desktop'
+        image_dir_path = f'{cur_path}/{image_dir}'
+        if os.path.isdir(image_dir_path):
+            cur_path = image_dir_path
+
+        dir_path = QFileDialog.getExistingDirectory(self, 'Open Directory', cur_path)
+        if dir_path == "":
+            return "break"
+        else:
+            new_path = os.path.dirname(dir_path)
+            config = ConfigObj(self.config_ini_path, encoding='utf-8')
+            config['PATH']['cur_path'] = new_path
+            config.write()
+        # self.ui.label_7.setText(dir_path)
+        fileNames = glob.glob(f'{dir_path}/*')
+        self.image_list = fileNames
+        flList = []
+        self.fnames = []
+        if 0 < len(fileNames):
+            for name in fileNames:
+                ext = os.path.splitext(os.path.basename(name))[1]
+                if ext != ".xlsx":
+                    # fSize = self.convert_size(os.path.getsize(name), 'MB') 
+                    fname = os.path.splitext(os.path.basename(name))[0]
+                    
+                    flList.append([name, re.sub('^.{4}([0-9]{4})',r'\1', fname)])
+                    self.fnames.append(os.path.basename(name))
+            column_list = ['ファイルパス', '画像ファイル名']
+
+            move_flList_df = pd.DataFrame(flList, columns=column_list).sort_values('画像ファイル名')
+        else:
+            pass
+
+        # df_list = pd.merge(self.df, self.flList_df.drop('ファイルサイズ', axis=1), on='画像ファイル名', how='outer')
+
+        # ----------
+        move_df = self.df.drop(['フォルダ名', 'ファイル名'], axis=1)
+        df_move = pd.merge(move_df, move_flList_df, on='画像ファイル名', how='inner')
+        # self.ui.listWidget.clear()
+        """
+        for index, row in df_move.iterrows():
+            if str(row[3]) == 'nan':
+                los_text = f'{row[4]}がリストにありません。'
+                self.ui.listWidget.addItem(los_text)
+        if los_text != "":
+            return "break"
+        flList_cunt = len(self.flList_df)
+        df_count = len(df_move)
+        out_path = self.config_path("output_path")
+        if out_path == "null":
+            out_path = os.path.expanduser('~') + '/Desktop'
+        dir_path = QFileDialog.getExistingDirectory(self, 'Select Folder', out_path)
+        if dir_path == "":
+            return "break"
+        else:
+            new_out_path = dir_path
+            config = ConfigObj(self.config_ini_path, encoding='utf-8')
+            config['PATH']['output_path'] = new_out_path
+            config.write()
+        """
+        type_text = self.ui.lineEdit_11.text()
+        book_no = self.ui.lineEdit_10.text()
+
+        dir_path = f'{dir_path}/{book_no}'
+        if self.ui.checkBox.isChecked():
+            # dir_path = f'{dir_path}/{book_no}'
+            pass
+        if dir_path == "":
+            return "break"
+        dup_no = 0
+
+        if os.path.exists(dir_path) == False:
+            os.mkdir(dir_path)
+
+        for column_name, item in df_move.iterrows():
+            """
+            origin_path = f'{item[5]}'
+            item_1 = item[2].replace('/', '／')
+            if type_text != "":
+                item_0 = type_text
+            else:
+                item_0 = item[0]
+            folder_name = f'{dir_path}/{item_0}/{item_1}/'
+            folder_name = folder_name.replace(':','：')
+            if os.path.exists(folder_name) == False:
+                os.makedirs(folder_name)
+            item_2 = item[3].replace('/', '／')
+            rename_path = f'{dir_path}/{item_0}/{item_1}/{item_2}'
+            rename_path = rename_path.replace(':','：')
+            """
+            origin_path = f'{item[3]}'
+            item_1 = os.path.basename(origin_path)
+
+            move_path = f'{dir_path}/{item_1}'
+            # item_1 = f'{item[2]}'
+            # root, ext = os.path.splitext(origin_path)
+            # move_path = f'{dir_path}/{item_1}{ext}'
+            if os.path.isfile(move_path):
+                los_text = f'{os.path.basename(move_path)}はすでにあります。'
+                self.ui.listWidget.addItem(los_text)
+            else:
+                shutil.move(origin_path, move_path)
+        # self.ui.pushButton_7.setEnabled(False)
+        ms_text = "終了しました"
+        msgBox = QMessageBox()
+        msgBox.setText(ms_text)
+        msgBox.setIcon(QMessageBox.Icon.Information)
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        msgBox.exec_()
 
     def file_rename(self):
         # mogrify -path ../rev -resize 50% -quality 100 ./

@@ -8,7 +8,7 @@
 		<data>
 		ZW4xRIGO4XUKYmqWc+ls24VWT8o=
 		</data>
-		<key>Resources/generated-d6ab2e429a8ffd6fcee5119e9d6ea5f5d03b1874da8de7cd5233394fe2d49552.icns</key>
+		<key>Resources/generated-88fca92dbc3f9985555d2425b3c4f8707a458cf400f7f54a8af6dee91eb78178.icns</key>
 		<data>
 		kEQX/bZV7B5tfBpneqcVlFzEQ/M=
 		</data>
@@ -3490,10 +3490,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			7k70EF0pPm+bPhBuRM2h/IyjSjo=
+			h70Y3waa1Fxw9qZrpoAXwj1CtT0=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"4e0c0484df2216da5676d7d71fc97674596b84c9" or cdhash H"ee4ef4105d293e6f9b3e106e44cda1fc8ca34a3a"</string>
+			<string>cdhash H"db330497907d12615bfd613876da8b93fc7316fc" or cdhash H"87bd18df069ad45c70f6a66ba68017c23d42b53d"</string>
 		</dict>
 		<key>MacOS/image</key>
 		<dict>
@@ -4687,7 +4687,7 @@
 			u51fq0tJWNa2cXN337GrbghN6LERTuukf0qOo81zm6o=
 			</data>
 		</dict>
-		<key>Resources/generated-d6ab2e429a8ffd6fcee5119e9d6ea5f5d03b1874da8de7cd5233394fe2d49552.icns</key>
+		<key>Resources/generated-88fca92dbc3f9985555d2425b3c4f8707a458cf400f7f54a8af6dee91eb78178.icns</key>
 		<dict>
 			<key>hash2</key>
 			<data>

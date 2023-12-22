@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1658</width>
-    <height>918</height>
+    <width>1762</width>
+    <height>939</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -105,7 +105,7 @@
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1,1,1,1,1,1,1,0,2,6,2,0,2,1,1,1,1,1">
+     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1,1,1,1,1,1,1,0,2,0,6,2,0,2,1,1,1,1,1">
       <item>
        <widget class="QLabel" name="label_10">
         <property name="maximumSize">
@@ -178,6 +178,13 @@
        <widget class="QPushButton" name="pushButton_4">
         <property name="text">
          <string>Excel読込</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_7">
+        <property name="text">
+         <string>画像収集</string>
         </property>
        </widget>
       </item>
@@ -277,7 +284,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1658</width>
+     <width>1762</width>
      <height>24</height>
     </rect>
    </property>

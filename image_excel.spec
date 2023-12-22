@@ -19,8 +19,9 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
-a.datas += [('image/re.png', 'image/re.png', 'DATA')]
-a.datas += [('config.ini', 'config.ini', 'TEXT')]
+
+a.datas += [('./image/re.png', './image/re.png', 'DATA')]
+a.datas += [('./config.ini', './config.ini', 'TEXT')]
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
@@ -39,7 +40,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['image/re.png'],
 )
 coll = COLLECT(
     exe,
@@ -54,6 +54,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='image_excel.app',
-    icon='image/re.png',
+    icon='./image/re.png',
     bundle_identifier=None,
 )
