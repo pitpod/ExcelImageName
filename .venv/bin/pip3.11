@@ -1,4 +1,4 @@
-#!/Users/matsu/VS_Code/ExcelImageName/eivenv/bin/python3.11
+#!/Users/matsu/VS_Code/ExcelImageName/.venv/bin/python3.11
 # -*- coding: utf-8 -*-
 import re
 import sys
