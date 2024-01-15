@@ -32,6 +32,7 @@ class Application(QMainWindow):
         self.config_ini = configparser.ConfigParser()
         self.config_ini_path = f'{ini_cur_path}/config.ini'
         self.name_image_columns = self.config_read()
+        self.digit = self.config_degits()
         self.abc =["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
         unit = ["%","px"]
         self.ui.comboBox_2.addItems(unit)
@@ -42,6 +43,7 @@ class Application(QMainWindow):
         self.ui.lineEdit_4.setText(self.name_image_columns[4])
         self.ui.lineEdit_7.setText("3")
         self.ui.lineEdit_9.setText(self.name_image_columns[5])
+        self.ui.lineEdit_12.setText(self.digit)
         self.ui.pushButton.clicked.connect(lambda: self.excel_select())
         self.ui.pushButton_2.clicked.connect(lambda: self.insert_image())
         self.ui.pushButton_3.clicked.connect(lambda: self.openFiles())
@@ -86,6 +88,16 @@ class Application(QMainWindow):
                 path = self.config_ini['PATH']
                 cur_path = path.get(section)
             return cur_path
+        else:
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.config_ini_path)
+
+    def config_degits(self):
+        if os.path.exists(self.config_ini_path):
+            with open(self.config_ini_path, encoding='utf-8') as fp:
+                self.config_ini.read_file(fp)
+                ini = self.config_ini['INI']
+                digits_ini = ini.get('digits')
+            return digits_ini
         else:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self.config_ini_path)
 
@@ -176,14 +188,14 @@ class Application(QMainWindow):
         df = pd.read_excel(name, sheet_name=sh, dtype=str, header=None, names=headers, usecols=use_cols, skiprows=sk, skipfooter=foot)
         serila_list = []
         if self.ui.checkBox_2.isChecked():
+            degit = self.ui.lineEdit_12.text() # 揃えたい桁数
             for num in range(len(ret)):
-                string = str(num + 1).zfill(3)
+                string = str(num + 1).zfill(int(degit))
                 serila_list.append(string)
             # serial_num = pd.RangeIndex(start=1, stop=len(ret) + 1, step=1).astype(str)
             # serial_num = serial_num.to_list()
             # serial_num = serial_num.astype(str)
             # 各セルに対して関数を適用
-            width = 4  # 揃えたい桁数
             # formatted_df = serial_num.applymap(lambda x: self.format_cell(x, width))
             df['画像ファイル名'] = serila_list
         self.df = df.dropna(subset=['画像ファイル名'])
@@ -197,6 +209,7 @@ class Application(QMainWindow):
             self.ui.listWidget.addItem("-----------------------------------")
             # self.re_model.sort('画像名', True)
             return "break"
+        self.ui.label_11.setText(str(len(self.df)))
         self.np_model = IE_Model(self.df, headers) 
         self.ui.tableView.setModel(self.np_model)
         self.ui.tableView.setColumnWidth(0, 40)
