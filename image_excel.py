@@ -61,7 +61,7 @@ class Application(QMainWindow):
         headders = ['画像ファイル名','ファイルサイズ']
         clear_list = [["",""]]
         clear_df = pd.DataFrame(clear_list)
-        self.clear_model = IM_Model(clear_df, headders) 
+        self.clear_model = IM_Model(clear_df, headders)
         self.ui.tableView_2.setModel(self.clear_model)
         self.ui.checkBox.setChecked(True)
 
@@ -136,7 +136,7 @@ class Application(QMainWindow):
         self.ui.lineEdit_8.clear()
 
     def excel_read(self):
-        # im_model = IM_Model() 
+        # im_model = IM_Model()
         self.ui.tableView_2.setModel(self.clear_model)
         self.ui.listWidget.clear()
         self.scene.clear()
@@ -210,7 +210,7 @@ class Application(QMainWindow):
             # self.re_model.sort('画像名', True)
             return "break"
         self.ui.label_11.setText(str(len(self.df)))
-        self.np_model = IE_Model(self.df, headers) 
+        self.np_model = IE_Model(self.df, headers)
         self.ui.tableView.setModel(self.np_model)
         self.ui.tableView.setColumnWidth(0, 40)
         self.ui.tableView.setColumnWidth(1, 60)
@@ -238,7 +238,7 @@ class Application(QMainWindow):
             if value == keyword:
                 cell_address = openpyxl.utils.get_column_letter(cell.column) +  str(cell.row)
                 result.append(cell_address)
-    
+
         return result
 
     def openFiles(self, select_type = 0):
@@ -268,7 +268,7 @@ class Application(QMainWindow):
             for name in fileNames:
                 ext = os.path.splitext(os.path.basename(name))[1]
                 if ext != ".xlsx":
-                    fSize = self.convert_size(os.path.getsize(name), 'MB') 
+                    fSize = self.convert_size(os.path.getsize(name), 'MB')
                     fname = os.path.splitext(os.path.basename(name))[0]
                     flList.append([name, fname, fSize])
                     self.fnames.append(os.path.basename(name))
@@ -282,7 +282,7 @@ class Application(QMainWindow):
             self.flList_df = pd.DataFrame(flList, columns=column_list).sort_values('画像ファイル名')
             fl_df = self.flList_df.iloc[:,1:]
             headders = ['画像ファイル名','ファイルサイズ']
-            self.im_model = IM_Model(fl_df, headders) 
+            self.im_model = IM_Model(fl_df, headders)
             self.ui.tableView_2.setModel(self.im_model)
             self.ui.tableView_2.setColumnWidth(0, 100)
         else:
@@ -313,7 +313,7 @@ class Application(QMainWindow):
         index_col = index.column()
         index_row = index.row()
 
-        path_text = self.flList_df.iloc[index_row,0] 
+        path_text = self.flList_df.iloc[index_row,0]
         self.imageView(path_text)
 
     def imageView(self, f_path = ""):
@@ -361,9 +361,9 @@ class Application(QMainWindow):
             for name in fileNames:
                 ext = os.path.splitext(os.path.basename(name))[1]
                 if ext != ".xlsx":
-                    # fSize = self.convert_size(os.path.getsize(name), 'MB') 
+                    # fSize = self.convert_size(os.path.getsize(name), 'MB')
                     fname = os.path.splitext(os.path.basename(name))[0]
-                    
+
                     flList.append([name, re.sub('^.{4}([0-9]{4})',r'\1', fname)])
                     self.fnames.append(os.path.basename(name))
             column_list = ['ファイルパス', '画像ファイル名']
@@ -544,7 +544,7 @@ class Application(QMainWindow):
                         # dpi = QPaintDevice.physicalDpiY(self)
                         # fs = int(font_size * dpi / 72) #ピクセル
                         # fs = int(font_size * 72 / 72) #ピクセル
-                        point_size = (resize * 72) / 72 
+                        point_size = (resize * 72) / 72
                         ws.row_dimensions[f].height = str(math.ceil(resize * 0.78))
                         ws.column_dimensions[img_position].width = str(math.ceil(resize * 0.151))
                         if img.width > img.height:
@@ -576,17 +576,17 @@ class Application(QMainWindow):
             img.width = width
             img.height = height
             return img
-    
+
     def delItem(self, view, model, list_type = 0):
         indexes = view.selectedIndexes()
-        
+
         if model.rowCount() == 0:
             return
-    
+
         if len(indexes) == 0:
             model.removeItem(model.rowCount()-1)
             return
-        
+
         rows = set([index.row() for index in indexes])
         if list_type == 0:
             self.df = model.removeItems(rows)
@@ -688,10 +688,10 @@ class IM_Model(QAbstractTableModel):
             self.beginRemoveRows(QtCore.QModelIndex(), row, row)
             # del self.list[row]
             self.list = self.list.drop([row])
-            self.endRemoveRows() 
+            self.endRemoveRows()
         self.list = self.list.reset_index(drop=True)
         return self.list
-    
+
     def addItem(self, row, item, parent=QtCore.QModelIndex()):
         self.beginInsertRows(parent, row, row)
         self.list.insert(row, item)
@@ -752,10 +752,10 @@ class IE_Model(QAbstractTableModel):
             self.beginRemoveRows(QtCore.QModelIndex(), row, row)
             # del self.list[row]
             self.list = self.list.drop([row])
-            self.endRemoveRows() 
+            self.endRemoveRows()
         self.list = self.list.reset_index(drop=True)
         return self.list
-    
+
     def addItem(self, row, item, parent=QtCore.QModelIndex()):
         self.beginInsertRows(parent, row, row)
         self.list.insert(row, item)
