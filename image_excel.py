@@ -397,23 +397,34 @@ class Application(QMainWindow):
         book_no = self.ui.lineEdit_10.text()
 
         if self.ui.checkBox.isChecked():
-            dir_path = f'{dir_path}/{type_text}_{book_no}'
+            if book_no == "":
+                dir_path = f'{dir_path}'
+            else:
+                dir_path = f'{dir_path}/{type_text}_{book_no.zfill(2)}'
         if dir_path == "":
             return "break"
         dup_no = 0
         for column_name, item in df_rename.iterrows():
             origin_path = f'{item[5]}'
             item_1 = item[2].replace('/', '／')
+
             if type_text != "":
                 item_0 = type_text
             else:
                 item_0 = item[0]
-            folder_name = f'{dir_path}/{item_0}/{item_1}/'
+
+            if book_no == "":
+                folder_name = f'{dir_path}/{type_text}_{item[1].zfill(2)}/{item_0}/{item_1}/'
+            else:
+                folder_name = f'{dir_path}/{item_0}/{item_1}/'
             folder_name = folder_name.replace(':','：')
             if os.path.exists(folder_name) == False:
                 os.makedirs(folder_name)
             item_2 = item[3].replace('/', '／')
-            rename_path = f'{dir_path}/{item_0}/{item_1}/{item_2}'
+            if book_no == "":
+                rename_path = f'{dir_path}/{type_text}_{item[1].zfill(2)}/{item_0}/{item_1}/{item_2}'
+            else:
+                rename_path = f'{dir_path}/{item_0}/{item_1}/{item_2}'
             rename_path = rename_path.replace(':','：')
 
             if os.path.isfile(rename_path):
