@@ -417,7 +417,9 @@ class Application(QMainWindow):
                 folder_name = f'{dir_path}/{type_text}_{item[1].zfill(2)}/{item_0}/{item_1}/'
             else:
                 folder_name = f'{dir_path}/{item_0}/{item_1}/'
+
             folder_name = folder_name.replace(':','：')
+
             if os.path.exists(folder_name) == False:
                 os.makedirs(folder_name)
             item_2 = item[3].replace('/', '／')
