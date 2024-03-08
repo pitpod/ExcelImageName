@@ -21,7 +21,7 @@ a = Analysis(
 )
 
 a.datas += [('./image/re.png', './image/re.png', 'DATA')]
-a.datas += [('./config.ini', './config.ini', 'TEXT')]
+a.datas += [('./config.ini', './config.ini', 'DATA')]
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(

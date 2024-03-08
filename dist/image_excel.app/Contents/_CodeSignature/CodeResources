@@ -3367,10 +3367,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			jkgxPgXOYzGRjwpHkS52j7JLk5o=
+			cDhs7/iMzgGZ+wXSQ0s3JbMB/t0=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"01b63799092397b4d125f65a02b0d3cf5af8aec3" or cdhash H"8e48313e05ce6331918f0a47912e768fb24b939a"</string>
+			<string>cdhash H"0f842c83bfa46d19548f7a3981413178daeaea9c" or cdhash H"70386ceff88cce0199fb05d2434b3725b301fedd"</string>
 		</dict>
 		<key>Frameworks/image</key>
 		<dict>

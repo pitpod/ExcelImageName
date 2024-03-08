@@ -236,18 +236,23 @@ class Application(QMainWindow):
         fileNames = glob.glob(f'{dir_path}/*')
         self.image_list = fileNames
         flList = []
+        flList2 = []
         self.fnames = []
         if 0 < len(fileNames):
             for name in fileNames:
                 ext = os.path.splitext(os.path.basename(name))[1]
                 if ext != ".xlsx":
                     fSize = self.convert_size(os.path.getsize(name), 'MB') 
+                    hwSize = Image.open(name)
                     fname = os.path.splitext(os.path.basename(name))[0]
                     flList.append([name, fname, fSize])
+                    flList2.append([name, fname, fSize, hwSize.width, hwSize.height])
                     self.fnames.append(os.path.basename(name))
             column_list = ['ファイルパス', '画像ファイル名','ファイルサイズ']
+            column_list2 = ['ファイルパス', '画像ファイル名','ファイルサイズ', '幅', '高さ']
             self.flList_df = pd.DataFrame(flList, columns=column_list).sort_values('画像ファイル名')
-            fl_df = self.flList_df.iloc[:,1:]
+            self.flList_df2 = pd.DataFrame(flList2, columns=column_list2).sort_values('画像ファイル名')
+            fl_df = self.flList_df.iloc[:,1:3]
             headders = ['画像ファイル名','ファイルサイズ']
             self.im_model = IM_Model(fl_df, headders) 
             self.ui.tableView_2.setModel(self.im_model)
@@ -255,9 +260,20 @@ class Application(QMainWindow):
         else:
             pass
         size_text = ""
-        for index, row in self.flList_df.iterrows():
+        for index, row in self.flList_df2.iterrows():
             mb = float(row[2].replace(" MB",""))
             if mb < float(3.5):
+                hw = row[3] / row[4] 
+                dirname = os.path.dirname(row[0])
+                basename = os.path.basename(row[0])
+                if hw >= 1:
+                    if not os.path.isdir(f'{dirname}/under_L'):
+                        os.makedirs(f'{dirname}/under_L', exist_ok=True)
+                    new_path = shutil.move(row[0], f'{dirname}/under_L/{basename}')
+                else:
+                    if not os.path.isdir(f'{dirname}/under_P'):
+                        os.makedirs(f'{dirname}/under_P', exist_ok=True)
+                    new_path = shutil.move(row[0], f'{dirname}/under_P/{basename}')
                 size_text = f'{row[1]}が3.5メガ未満です。'
                 self.ui.listWidget.addItem(size_text)
         if size_text != "":
