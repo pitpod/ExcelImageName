@@ -1,4 +1,4 @@
-#!/Users/matsu/VS_Code/ExcelImageName/.venv/bin/python3.11
+#!/Users/koujimatsumoto/VS_Code/ExcelImageName/.venv/bin/python3.12
 # -*- coding: utf-8 -*-
 import re
 import sys
